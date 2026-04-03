@@ -5,6 +5,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const rideType = searchParams.get('rideType');
   const genre = searchParams.get('genre');
+  const artistsParam = searchParams.get('artists');
 
   if (!rideType || !genre) {
     return NextResponse.json(
@@ -13,8 +14,13 @@ export async function GET(request) {
     );
   }
 
+  // artists is an optional comma-separated list
+  const artists = artistsParam
+    ? artistsParam.split(',').map((a) => a.trim()).filter(Boolean).slice(0, 3)
+    : [];
+
   try {
-    const tracks = await getPlaylist(rideType, genre);
+    const { tracks } = await getPlaylist(rideType, genre, artists);
     return NextResponse.json({ tracks });
   } catch (err) {
     console.error('Playlist API error:', err.message);

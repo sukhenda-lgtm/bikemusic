@@ -4,41 +4,11 @@ import { useState } from 'react';
 import SongCard from '@/components/SongCard';
 
 const RIDE_TYPES = [
-  {
-    id: 'hiit',
-    label: 'HIIT',
-    description: 'High-intensity intervals',
-    cadence: '90–100 RPM',
-    icon: '⚡',
-  },
-  {
-    id: 'tabata',
-    label: 'Tabata',
-    description: '20s on / 10s off',
-    cadence: '90–100 RPM',
-    icon: '🔥',
-  },
-  {
-    id: 'zone_endurance',
-    label: 'Zone Endurance',
-    description: 'Sustained moderate effort',
-    cadence: '75–85 RPM',
-    icon: '💪',
-  },
-  {
-    id: 'climb',
-    label: 'Climb',
-    description: 'Heavy resistance, uphill grind',
-    cadence: '55–65 RPM',
-    icon: '⛰️',
-  },
-  {
-    id: 'recovery',
-    label: 'Recovery',
-    description: 'Easy, relaxed pace',
-    cadence: '70–90 RPM',
-    icon: '🌀',
-  },
+  { id: 'hiit', label: 'HIIT', description: 'High-intensity intervals', cadence: '90–100 RPM', icon: '⚡' },
+  { id: 'tabata', label: 'Tabata', description: '20s on / 10s off', cadence: '90–100 RPM', icon: '🔥' },
+  { id: 'zone_endurance', label: 'Zone Endurance', description: 'Sustained moderate effort', cadence: '75–85 RPM', icon: '💪' },
+  { id: 'climb', label: 'Climb', description: 'Heavy resistance, uphill grind', cadence: '55–65 RPM', icon: '⛰️' },
+  { id: 'recovery', label: 'Recovery', description: 'Easy, relaxed pace', cadence: '70–90 RPM', icon: '🌀' },
 ];
 
 const GENRES = ['Pop', 'Rock', 'Country', 'EDM', 'Hip-Hop/Rap'];
@@ -52,20 +22,36 @@ function formatDuration(tracks) {
 export default function Home() {
   const [selectedRide, setSelectedRide] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(null);
+  const [artists, setArtists] = useState(['', '', '']);
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasResults, setHasResults] = useState(false);
+
+  function updateArtist(index, value) {
+    setArtists((prev) => prev.map((a, i) => (i === index ? value : a)));
+  }
+
+  function clearArtist(index) {
+    setArtists((prev) => prev.map((a, i) => (i === index ? '' : a)));
+  }
 
   async function handleGenerate() {
     if (!selectedRide || !selectedGenre) return;
     setLoading(true);
     setError(null);
 
+    const filledArtists = artists.filter((a) => a.trim());
+    const params = new URLSearchParams({
+      rideType: selectedRide,
+      genre: selectedGenre,
+    });
+    if (filledArtists.length > 0) {
+      params.set('artists', filledArtists.join(','));
+    }
+
     try {
-      const res = await fetch(
-        `/api/playlist?rideType=${selectedRide}&genre=${encodeURIComponent(selectedGenre)}`
-      );
+      const res = await fetch(`/api/playlist?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
       setTracks(data.tracks);
@@ -82,10 +68,12 @@ export default function Home() {
     setTracks([]);
     setSelectedRide(null);
     setSelectedGenre(null);
+    setArtists(['', '', '']);
     setError(null);
   }
 
   const rideLabel = RIDE_TYPES.find((r) => r.id === selectedRide)?.label;
+  const filledArtists = artists.filter((a) => a.trim());
   const canGenerate = selectedRide && selectedGenre;
 
   return (
@@ -126,7 +114,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Ride Type Selection */}
+            {/* Step 01 — Ride Type */}
             <section className="mb-10">
               <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-4">
                 01 — Select Your Ride
@@ -143,9 +131,7 @@ export default function Home() {
                     }`}
                   >
                     <div className="text-2xl mb-2">{ride.icon}</div>
-                    <div className="font-bold text-sm uppercase tracking-wide">
-                      {ride.label}
-                    </div>
+                    <div className="font-bold text-sm uppercase tracking-wide">{ride.label}</div>
                     <div className="text-[#a3a3a3] text-xs mt-1">{ride.description}</div>
                     <div className="text-orange-400 text-xs font-mono mt-2">{ride.cadence}</div>
                   </button>
@@ -153,7 +139,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Genre Selection */}
+            {/* Step 02 — Genre */}
             <section className="mb-10">
               <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-4">
                 02 — Choose Your Genre
@@ -173,6 +159,43 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+            </section>
+
+            {/* Step 03 — Artists (optional) */}
+            <section className="mb-10">
+              <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-1">
+                03 — Add Artists <span className="text-[#555] normal-case tracking-normal font-normal">(optional)</span>
+              </h2>
+              <p className="text-[#666] text-xs mb-4">
+                Enter up to 3 artists or bands. Songs will be pulled from their catalogs.
+              </p>
+              <div className="flex flex-col gap-3">
+                {artists.map((value, i) => (
+                  <div key={i} className="relative">
+                    <input
+                      type="text"
+                      value={value}
+                      onChange={(e) => updateArtist(i, e.target.value)}
+                      placeholder={`Artist ${i + 1} — e.g. ${['Beyoncé', 'AC/DC', 'Post Malone'][i]}`}
+                      className="w-full bg-[#141414] border-2 border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white placeholder-[#555] focus:outline-none focus:border-orange-500 transition-colors pr-10"
+                    />
+                    {value && (
+                      <button
+                        onClick={() => clearArtist(i)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555] hover:text-white transition-colors text-lg leading-none"
+                        aria-label="Clear artist"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {filledArtists.length > 0 && (
+                <p className="text-[#666] text-xs mt-3">
+                  Songs will be drawn from: <span className="text-orange-400">{filledArtists.join(', ')}</span>
+                </p>
+              )}
             </section>
 
             {/* Generate Button */}
@@ -202,6 +225,11 @@ export default function Home() {
               <h1 className="text-4xl font-black tracking-tight mb-1">
                 {rideLabel} <span className="text-[#555]">×</span> {selectedGenre}
               </h1>
+              {filledArtists.length > 0 && (
+                <p className="text-[#666] text-sm mb-1">
+                  Artists: <span className="text-[#a3a3a3]">{filledArtists.join(', ')}</span>
+                </p>
+              )}
               <p className="text-[#666] text-sm">
                 {tracks.length} songs · {formatDuration(tracks)} · Click any song to open in Spotify
               </p>
