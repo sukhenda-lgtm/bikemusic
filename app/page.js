@@ -13,6 +13,29 @@ const RIDE_TYPES = [
 
 const GENRES = ['Pop', 'Rock', 'Country', 'EDM', 'Hip-Hop/Rap'];
 
+const MUSIC_MODES = [
+  {
+    id: 'genre',
+    label: 'Browse by Genre',
+    description: 'Pick a genre and we\'ll find matching workout tracks',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'artists',
+    label: 'Choose Your Artists',
+    description: 'Enter up to 3 artists or bands you want to ride to',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+      </svg>
+    ),
+  },
+];
+
 function formatDuration(tracks) {
   const totalMs = tracks.reduce((sum, t) => sum + t.durationMs, 0);
   const totalMin = Math.round(totalMs / 60000);
@@ -21,12 +44,20 @@ function formatDuration(tracks) {
 
 export default function Home() {
   const [selectedRide, setSelectedRide] = useState(null);
+  const [musicMode, setMusicMode] = useState(null); // 'genre' | 'artists'
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [artists, setArtists] = useState(['', '', '']);
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasResults, setHasResults] = useState(false);
+
+  function selectMode(mode) {
+    setMusicMode(mode);
+    // Clear the other mode's selections
+    if (mode === 'genre') setArtists(['', '', '']);
+    if (mode === 'artists') setSelectedGenre(null);
+  }
 
   function updateArtist(index, value) {
     setArtists((prev) => prev.map((a, i) => (i === index ? value : a)));
@@ -36,17 +67,25 @@ export default function Home() {
     setArtists((prev) => prev.map((a, i) => (i === index ? '' : a)));
   }
 
+  const filledArtists = artists.filter((a) => a.trim());
+
+  const canGenerate =
+    selectedRide &&
+    musicMode &&
+    (musicMode === 'genre' ? !!selectedGenre : filledArtists.length > 0);
+
   async function handleGenerate() {
-    if (!selectedRide || !selectedGenre) return;
+    if (!canGenerate) return;
     setLoading(true);
     setError(null);
 
-    const filledArtists = artists.filter((a) => a.trim());
-    const params = new URLSearchParams({
-      rideType: selectedRide,
-      genre: selectedGenre,
-    });
-    if (filledArtists.length > 0) {
+    const params = new URLSearchParams({ rideType: selectedRide });
+
+    if (musicMode === 'genre') {
+      params.set('genre', selectedGenre);
+    } else {
+      // artists mode — genre is required by the API so pass a neutral default
+      params.set('genre', 'Pop');
       params.set('artists', filledArtists.join(','));
     }
 
@@ -67,14 +106,13 @@ export default function Home() {
     setHasResults(false);
     setTracks([]);
     setSelectedRide(null);
+    setMusicMode(null);
     setSelectedGenre(null);
     setArtists(['', '', '']);
     setError(null);
   }
 
   const rideLabel = RIDE_TYPES.find((r) => r.id === selectedRide)?.label;
-  const filledArtists = artists.filter((a) => a.trim());
-  const canGenerate = selectedRide && selectedGenre;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -90,10 +128,7 @@ export default function Home() {
             <span className="text-xl font-bold tracking-tight">BIKE MUSIC</span>
           </div>
           {hasResults && (
-            <button
-              onClick={handleReset}
-              className="text-sm text-[#a3a3a3] hover:text-white transition-colors"
-            >
+            <button onClick={handleReset} className="text-sm text-[#a3a3a3] hover:text-white transition-colors">
               ← Start Over
             </button>
           )}
@@ -106,8 +141,7 @@ export default function Home() {
             {/* Hero */}
             <div className="mb-12 text-center">
               <h1 className="text-5xl font-black tracking-tighter mb-3 leading-none">
-                FIND YOUR
-                <span className="text-orange-500"> RHYTHM</span>
+                FIND YOUR<span className="text-orange-500"> RHYTHM</span>
               </h1>
               <p className="text-[#a3a3a3] text-lg">
                 Choose your ride and your sound. We&apos;ll handle the rest.
@@ -139,64 +173,93 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Step 02 — Genre */}
+            {/* Step 02 — Music Selection Mode */}
             <section className="mb-10">
               <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-4">
-                02 — Choose Your Genre
+                02 — How Do You Want to Pick Your Music?
               </h2>
-              <div className="flex flex-wrap gap-3">
-                {GENRES.map((genre) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {MUSIC_MODES.map((mode) => (
                   <button
-                    key={genre}
-                    onClick={() => setSelectedGenre(genre)}
-                    className={`px-5 py-2.5 rounded-full border-2 font-semibold text-sm transition-all duration-200 ${
-                      selectedGenre === genre
-                        ? 'border-orange-500 bg-orange-500 text-white'
-                        : 'border-[#2a2a2a] text-[#a3a3a3] hover:border-[#555] hover:text-white'
+                    key={mode.id}
+                    onClick={() => selectMode(mode.id)}
+                    className={`text-left p-5 rounded-xl border-2 transition-all duration-200 ${
+                      musicMode === mode.id
+                        ? 'border-orange-500 bg-orange-500/10'
+                        : 'border-[#2a2a2a] bg-[#141414] hover:border-[#444]'
                     }`}
                   >
-                    {genre}
+                    <div className={`mb-3 ${musicMode === mode.id ? 'text-orange-400' : 'text-[#666]'}`}>
+                      {mode.icon}
+                    </div>
+                    <div className="font-bold text-sm uppercase tracking-wide mb-1">{mode.label}</div>
+                    <div className="text-[#a3a3a3] text-xs leading-relaxed">{mode.description}</div>
                   </button>
                 ))}
               </div>
             </section>
 
-            {/* Step 03 — Artists (optional) */}
-            <section className="mb-10">
-              <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-1">
-                03 — Add Artists <span className="text-[#555] normal-case tracking-normal font-normal">(optional)</span>
-              </h2>
-              <p className="text-[#666] text-xs mb-4">
-                Enter up to 3 artists or bands. Songs will be pulled from their catalogs.
-              </p>
-              <div className="flex flex-col gap-3">
-                {artists.map((value, i) => (
-                  <div key={i} className="relative">
-                    <input
-                      type="text"
-                      value={value}
-                      onChange={(e) => updateArtist(i, e.target.value)}
-                      placeholder={`Artist ${i + 1} — e.g. ${['Beyoncé', 'AC/DC', 'Post Malone'][i]}`}
-                      className="w-full bg-[#141414] border-2 border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white placeholder-[#555] focus:outline-none focus:border-orange-500 transition-colors pr-10"
-                    />
-                    {value && (
-                      <button
-                        onClick={() => clearArtist(i)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555] hover:text-white transition-colors text-lg leading-none"
-                        aria-label="Clear artist"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {filledArtists.length > 0 && (
-                <p className="text-[#666] text-xs mt-3">
-                  Songs will be drawn from: <span className="text-orange-400">{filledArtists.join(', ')}</span>
+            {/* Step 03 — Genre or Artists depending on mode */}
+            {musicMode === 'genre' && (
+              <section className="mb-10">
+                <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-4">
+                  03 — Choose Your Genre
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  {GENRES.map((genre) => (
+                    <button
+                      key={genre}
+                      onClick={() => setSelectedGenre(genre)}
+                      className={`px-5 py-2.5 rounded-full border-2 font-semibold text-sm transition-all duration-200 ${
+                        selectedGenre === genre
+                          ? 'border-orange-500 bg-orange-500 text-white'
+                          : 'border-[#2a2a2a] text-[#a3a3a3] hover:border-[#555] hover:text-white'
+                      }`}
+                    >
+                      {genre}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {musicMode === 'artists' && (
+              <section className="mb-10">
+                <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-1">
+                  03 — Enter Your Artists
+                </h2>
+                <p className="text-[#666] text-xs mb-4">
+                  Add up to 3 artists or bands. Songs will be pulled from their Spotify catalogs.
                 </p>
-              )}
-            </section>
+                <div className="flex flex-col gap-3">
+                  {artists.map((value, i) => (
+                    <div key={i} className="relative">
+                      <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => updateArtist(i, e.target.value)}
+                        placeholder={`Artist ${i + 1} — e.g. ${['Beyoncé', 'AC/DC', 'Post Malone'][i]}`}
+                        className="w-full bg-[#141414] border-2 border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white placeholder-[#555] focus:outline-none focus:border-orange-500 transition-colors pr-10"
+                      />
+                      {value && (
+                        <button
+                          onClick={() => clearArtist(i)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555] hover:text-white transition-colors text-lg leading-none"
+                          aria-label="Clear artist"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {filledArtists.length > 0 && (
+                  <p className="text-[#666] text-xs mt-3">
+                    Songs will be drawn from: <span className="text-orange-400">{filledArtists.join(', ')}</span>
+                  </p>
+                )}
+              </section>
+            )}
 
             {/* Generate Button */}
             <button
@@ -211,9 +274,7 @@ export default function Home() {
               {loading ? 'Building Your Playlist...' : 'Generate Playlist'}
             </button>
 
-            {error && (
-              <p className="mt-4 text-red-400 text-sm text-center">{error}</p>
-            )}
+            {error && <p className="mt-4 text-red-400 text-sm text-center">{error}</p>}
           </>
         ) : (
           <>
@@ -223,12 +284,13 @@ export default function Home() {
                 Your Playlist
               </p>
               <h1 className="text-4xl font-black tracking-tight mb-1">
-                {rideLabel} <span className="text-[#555]">×</span> {selectedGenre}
+                {rideLabel}
+                {musicMode === 'genre' && (
+                  <> <span className="text-[#555]">×</span> {selectedGenre}</>
+                )}
               </h1>
-              {filledArtists.length > 0 && (
-                <p className="text-[#666] text-sm mb-1">
-                  Artists: <span className="text-[#a3a3a3]">{filledArtists.join(', ')}</span>
-                </p>
+              {musicMode === 'artists' && filledArtists.length > 0 && (
+                <p className="text-[#a3a3a3] text-sm mb-1">{filledArtists.join(', ')}</p>
               )}
               <p className="text-[#666] text-sm">
                 {tracks.length} songs · {formatDuration(tracks)} · Click any song to open in Spotify
