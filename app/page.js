@@ -17,7 +17,7 @@ const MUSIC_MODES = [
   {
     id: 'genre',
     label: 'Browse by Genre',
-    description: 'Pick a genre and we\'ll find matching workout tracks',
+    description: "Pick a genre and we'll find matching workout tracks",
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
         <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
@@ -27,7 +27,7 @@ const MUSIC_MODES = [
   {
     id: 'artists',
     label: 'Choose Your Artists',
-    description: 'Enter up to 3 artists or bands you want to ride to',
+    description: 'Enter up to 5 artists or bands you want to ride to',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
@@ -35,6 +35,8 @@ const MUSIC_MODES = [
     ),
   },
 ];
+
+const ARTIST_PLACEHOLDERS = ['Beyoncé', 'AC/DC', 'Post Malone', 'Taylor Swift', 'Eminem'];
 
 function formatDuration(tracks) {
   const totalMs = tracks.reduce((sum, t) => sum + t.durationMs, 0);
@@ -44,18 +46,21 @@ function formatDuration(tracks) {
 
 export default function Home() {
   const [selectedRide, setSelectedRide] = useState(null);
-  const [musicMode, setMusicMode] = useState(null); // 'genre' | 'artists'
+  const [musicMode, setMusicMode] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState(null);
-  const [artists, setArtists] = useState(['', '', '']);
+  const [artists, setArtists] = useState(['', '', '', '', '']);
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasResults, setHasResults] = useState(false);
 
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isCustomView, setIsCustomView] = useState(false);
+
   function selectMode(mode) {
     setMusicMode(mode);
-    // Clear the other mode's selections
-    if (mode === 'genre') setArtists(['', '', '']);
+    if (mode === 'genre') setArtists(['', '', '', '', '']);
     if (mode === 'artists') setSelectedGenre(null);
   }
 
@@ -67,8 +72,23 @@ export default function Home() {
     setArtists((prev) => prev.map((a, i) => (i === index ? '' : a)));
   }
 
-  const filledArtists = artists.filter((a) => a.trim());
+  function toggleSong(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
+  function buildCustomPlaylist() {
+    setIsCustomView(true);
+  }
+
+  function backToFullResults() {
+    setIsCustomView(false);
+  }
+
+  const filledArtists = artists.filter((a) => a.trim());
   const canGenerate =
     selectedRide &&
     musicMode &&
@@ -78,13 +98,13 @@ export default function Home() {
     if (!canGenerate) return;
     setLoading(true);
     setError(null);
+    setSelectedIds(new Set());
+    setIsCustomView(false);
 
     const params = new URLSearchParams({ rideType: selectedRide });
-
     if (musicMode === 'genre') {
       params.set('genre', selectedGenre);
     } else {
-      // artists mode — genre is required by the API so pass a neutral default
       params.set('genre', 'Pop');
       params.set('artists', filledArtists.join(','));
     }
@@ -108,11 +128,14 @@ export default function Home() {
     setSelectedRide(null);
     setMusicMode(null);
     setSelectedGenre(null);
-    setArtists(['', '', '']);
+    setArtists(['', '', '', '', '']);
     setError(null);
+    setSelectedIds(new Set());
+    setIsCustomView(false);
   }
 
   const rideLabel = RIDE_TYPES.find((r) => r.id === selectedRide)?.label;
+  const displayTracks = isCustomView ? tracks.filter((t) => selectedIds.has(t.id)) : tracks;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -135,7 +158,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main className="max-w-4xl mx-auto px-6 py-10 pb-32">
         {!hasResults ? (
           <>
             {/* Hero */}
@@ -173,7 +196,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Step 02 — Music Selection Mode */}
+            {/* Step 02 — Music Mode */}
             <section className="mb-10">
               <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-4">
                 02 — How Do You Want to Pick Your Music?
@@ -199,7 +222,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Step 03 — Genre or Artists depending on mode */}
+            {/* Step 03 — Genre or Artists */}
             {musicMode === 'genre' && (
               <section className="mb-10">
                 <h2 className="text-xs font-bold tracking-widest text-orange-500 uppercase mb-4">
@@ -229,7 +252,7 @@ export default function Home() {
                   03 — Enter Your Artists
                 </h2>
                 <p className="text-[#666] text-xs mb-4">
-                  Add up to 3 artists or bands. Songs will be pulled from their Spotify catalogs.
+                  Add up to 5 artists or bands. Songs will be pulled from their Spotify catalogs.
                 </p>
                 <div className="flex flex-col gap-3">
                   {artists.map((value, i) => (
@@ -238,7 +261,7 @@ export default function Home() {
                         type="text"
                         value={value}
                         onChange={(e) => updateArtist(i, e.target.value)}
-                        placeholder={`Artist ${i + 1} — e.g. ${['Beyoncé', 'AC/DC', 'Post Malone'][i]}`}
+                        placeholder={`Artist ${i + 1} — e.g. ${ARTIST_PLACEHOLDERS[i]}`}
                         className="w-full bg-[#141414] border-2 border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white placeholder-[#555] focus:outline-none focus:border-orange-500 transition-colors pr-10"
                       />
                       {value && (
@@ -279,9 +302,9 @@ export default function Home() {
         ) : (
           <>
             {/* Results Header */}
-            <div className="mb-8">
+            <div className="mb-6">
               <p className="text-orange-500 text-xs font-bold tracking-widest uppercase mb-2">
-                Your Playlist
+                {isCustomView ? 'Your Custom Playlist' : 'Your Playlist'}
               </p>
               <h1 className="text-4xl font-black tracking-tight mb-1">
                 {rideLabel}
@@ -293,28 +316,83 @@ export default function Home() {
                 <p className="text-[#a3a3a3] text-sm mb-1">{filledArtists.join(', ')}</p>
               )}
               <p className="text-[#666] text-sm">
-                {tracks.length} songs · {formatDuration(tracks)} · Click any song to open in Spotify
+                {displayTracks.length} songs · {formatDuration(displayTracks)} · Click any song to open in Spotify
               </p>
             </div>
 
+            {/* Custom view controls */}
+            {isCustomView && (
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  onClick={backToFullResults}
+                  className="text-sm text-[#a3a3a3] hover:text-white transition-colors flex items-center gap-1"
+                >
+                  ← Back to full results
+                </button>
+                <span className="text-[#333]">·</span>
+                <span className="text-xs text-[#666]">
+                  {selectedIds.size} of {tracks.length} songs selected
+                </span>
+              </div>
+            )}
+
             {/* Song List */}
             <div className="flex flex-col gap-2 mb-8">
-              {tracks.map((track, i) => (
-                <SongCard key={track.id} track={track} index={i} />
+              {displayTracks.map((track, i) => (
+                <SongCard
+                  key={track.id}
+                  track={track}
+                  index={i}
+                  selectable={!isCustomView}
+                  selected={selectedIds.has(track.id)}
+                  onToggle={() => toggleSong(track.id)}
+                />
               ))}
             </div>
 
-            {/* Refresh */}
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest bg-[#141414] border-2 border-[#2a2a2a] hover:border-orange-500 hover:text-orange-500 transition-all duration-200"
-            >
-              {loading ? 'Refreshing...' : '↻ Generate New Playlist'}
-            </button>
+            {/* Refresh (only in full results, not custom view) */}
+            {!isCustomView && (
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest bg-[#141414] border-2 border-[#2a2a2a] hover:border-orange-500 hover:text-orange-500 transition-all duration-200"
+              >
+                {loading ? 'Refreshing...' : '↻ Generate New Playlist'}
+              </button>
+            )}
           </>
         )}
       </main>
+
+      {/* Sticky action bar — shown when songs are selected in full results view */}
+      {hasResults && !isCustomView && selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#141414] border-t border-[#2a2a2a] px-6 py-4 z-10">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-bold text-sm">
+                {selectedIds.size} song{selectedIds.size !== 1 ? 's' : ''} selected
+              </p>
+              <p className="text-[#666] text-xs">
+                {formatDuration(tracks.filter((t) => selectedIds.has(t.id)))} total
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="text-sm text-[#a3a3a3] hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                onClick={buildCustomPlaylist}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest px-6 py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/20"
+              >
+                Build My Playlist
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

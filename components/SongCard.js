@@ -7,18 +7,46 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-export default function SongCard({ track, index }) {
+function SpotifyIcon({ url }) {
   return (
     <a
-      href={track.spotifyUrl}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-4 p-4 rounded-xl bg-[#1c1c1c] border border-[#2a2a2a] hover:border-orange-500 hover:bg-[#242424] transition-all duration-200"
+      onClick={(e) => e.stopPropagation()}
+      className="shrink-0"
+      aria-label="Open in Spotify"
     >
-      {/* Track number */}
-      <span className="text-[#555] text-sm font-mono w-6 text-right shrink-0 group-hover:text-orange-500 transition-colors">
-        {index + 1}
-      </span>
+      <svg
+        className="w-4 h-4 text-[#1DB954] opacity-60 hover:opacity-100 transition-opacity"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+      </svg>
+    </a>
+  );
+}
+
+function CardInner({ track, index, selected, selectable }) {
+  return (
+    <>
+      {/* Selection indicator or track number */}
+      {selectable ? (
+        <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
+          selected ? 'border-orange-500 bg-orange-500' : 'border-[#444]'
+        }`}>
+          {selected && (
+            <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+      ) : (
+        <span className="text-[#555] text-sm font-mono w-6 text-right shrink-0 group-hover:text-orange-500 transition-colors">
+          {index + 1}
+        </span>
+      )}
 
       {/* Album art */}
       <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-[#2a2a2a]">
@@ -41,18 +69,13 @@ export default function SongCard({ track, index }) {
 
       {/* Title & artist */}
       <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-sm truncate group-hover:text-orange-400 transition-colors">
+        <p className={`font-semibold text-sm truncate transition-colors ${
+          selected ? 'text-orange-400' : 'text-white group-hover:text-orange-400'
+        }`}>
           {track.title}
         </p>
         <p className="text-[#a3a3a3] text-xs truncate mt-0.5">{track.artist}</p>
       </div>
-
-      {/* BPM */}
-      {track.bpm != null && (
-        <span className="text-orange-500 text-xs font-mono font-bold shrink-0">
-          {Math.round(track.bpm)} BPM
-        </span>
-      )}
 
       {/* Duration */}
       <span className="text-[#666] text-xs font-mono shrink-0">
@@ -60,13 +83,35 @@ export default function SongCard({ track, index }) {
       </span>
 
       {/* Spotify icon */}
-      <svg
-        className="w-4 h-4 text-[#1DB954] shrink-0 opacity-60 group-hover:opacity-100 transition-opacity"
-        viewBox="0 0 24 24"
-        fill="currentColor"
+      <SpotifyIcon url={track.spotifyUrl} />
+    </>
+  );
+}
+
+export default function SongCard({ track, index, selectable = false, selected = false, onToggle }) {
+  if (selectable) {
+    return (
+      <div
+        onClick={onToggle}
+        className={`group flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+          selected
+            ? 'border-orange-500 bg-orange-500/10'
+            : 'border-[#2a2a2a] bg-[#1c1c1c] hover:border-[#444] hover:bg-[#242424]'
+        }`}
       >
-        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-      </svg>
+        <CardInner track={track} index={index} selected={selected} selectable />
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={track.spotifyUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-center gap-4 p-4 rounded-xl bg-[#1c1c1c] border border-[#2a2a2a] hover:border-orange-500 hover:bg-[#242424] transition-all duration-200"
+    >
+      <CardInner track={track} index={index} selected={false} selectable={false} />
     </a>
   );
 }

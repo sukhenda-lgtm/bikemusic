@@ -16,7 +16,7 @@ export async function GET(request) {
 
   // artists is an optional comma-separated list
   const artists = artistsParam
-    ? artistsParam.split(',').map((a) => a.trim()).filter(Boolean).slice(0, 3)
+    ? artistsParam.split(',').map((a) => a.trim()).filter(Boolean).slice(0, 5)
     : [];
 
   try {
