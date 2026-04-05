@@ -47,6 +47,13 @@ export default function SongCard({ track, index }) {
         <p className="text-[#a3a3a3] text-xs truncate mt-0.5">{track.artist}</p>
       </div>
 
+      {/* BPM */}
+      {track.bpm != null && (
+        <span className="text-orange-500 text-xs font-mono font-bold shrink-0">
+          {Math.round(track.bpm)} BPM
+        </span>
+      )}
+
       {/* Duration */}
       <span className="text-[#666] text-xs font-mono shrink-0">
         {formatDuration(track.durationMs)}
