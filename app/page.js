@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import Turnstile from 'react-turnstile';
 import SongCard from '@/components/SongCard';
 
 const RIDE_TYPES = [
@@ -57,6 +58,8 @@ export default function Home() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isCustomView, setIsCustomView] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState(null);
+  const turnstileRef = useRef(null);
 
   function selectMode(mode) {
     setMusicMode(mode);
@@ -92,7 +95,8 @@ export default function Home() {
   const canGenerate =
     selectedRide &&
     musicMode &&
-    (musicMode === 'genre' ? !!selectedGenre : filledArtists.length > 0);
+    (musicMode === 'genre' ? !!selectedGenre : filledArtists.length > 0) &&
+    !!turnstileToken;
 
   async function handleGenerate() {
     if (!canGenerate) return;
@@ -108,6 +112,7 @@ export default function Home() {
       params.set('genre', 'Pop');
       params.set('artists', filledArtists.join(','));
     }
+    params.set('cf-turnstile-response', turnstileToken);
 
     try {
       const res = await fetch(`/api/playlist?${params}`);
@@ -119,6 +124,8 @@ export default function Home() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   }
 
@@ -284,6 +291,17 @@ export default function Home() {
               </section>
             )}
 
+            <div className="flex justify-center mb-4">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                onVerify={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+                theme="dark"
+              />
+            </div>
+
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
@@ -352,13 +370,25 @@ export default function Home() {
 
             {/* Refresh (only in full results, not custom view) */}
             {!isCustomView && (
-              <button
-                onClick={handleGenerate}
-                disabled={loading}
-                className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest bg-[#141414] border-2 border-[#2a2a2a] hover:border-orange-500 hover:text-orange-500 transition-all duration-200"
-              >
-                {loading ? 'Refreshing...' : '↻ Generate New Playlist'}
-              </button>
+              <>
+                <div className="flex justify-center mb-4">
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                    onVerify={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken(null)}
+                    onError={() => setTurnstileToken(null)}
+                    theme="dark"
+                  />
+                </div>
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || !turnstileToken}
+                  className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest bg-[#141414] border-2 border-[#2a2a2a] hover:border-orange-500 hover:text-orange-500 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Refreshing...' : '↻ Generate New Playlist'}
+                </button>
+              </>
             )}
           </>
         )}

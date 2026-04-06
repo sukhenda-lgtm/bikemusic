@@ -6,6 +6,22 @@ export async function GET(request) {
   const rideType = searchParams.get('rideType');
   const genre = searchParams.get('genre');
   const artistsParam = searchParams.get('artists');
+  const cfToken = searchParams.get('cf-turnstile-response');
+  if (!cfToken) {
+    return NextResponse.json({ error: 'Missing verification token' }, { status: 400 });
+  }
+  const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: cfToken,
+    }),
+  });
+  const verifyData = await verifyRes.json();
+  if (!verifyData.success) {
+    return NextResponse.json({ error: 'Human verification failed' }, { status: 403 });
+  }
 
   if (!rideType || !genre) {
     return NextResponse.json(
