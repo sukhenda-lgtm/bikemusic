@@ -58,7 +58,8 @@ export default function Home() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isCustomView, setIsCustomView] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState(null);
+  const isDev = process.env.NODE_ENV === 'development';
+  const [turnstileToken, setTurnstileToken] = useState(isDev ? 'dev' : null);
   const turnstileRef = useRef(null);
 
   function selectMode(mode) {
@@ -291,16 +292,18 @@ export default function Home() {
               </section>
             )}
 
-            <div className="flex justify-center mb-4">
-              <Turnstile
-                ref={turnstileRef}
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                onVerify={(token) => setTurnstileToken(token)}
-                onExpire={() => setTurnstileToken(null)}
-                onError={() => setTurnstileToken(null)}
-                theme="dark"
-              />
-            </div>
+            {!isDev && (
+              <div className="flex justify-center mb-4">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  onVerify={(token) => setTurnstileToken(token)}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                  theme="dark"
+                />
+              </div>
+            )}
 
             {/* Generate Button */}
             <button
@@ -371,16 +374,18 @@ export default function Home() {
             {/* Refresh (only in full results, not custom view) */}
             {!isCustomView && (
               <>
-                <div className="flex justify-center mb-4">
-                  <Turnstile
-                    ref={turnstileRef}
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                    onVerify={(token) => setTurnstileToken(token)}
-                    onExpire={() => setTurnstileToken(null)}
-                    onError={() => setTurnstileToken(null)}
-                    theme="dark"
-                  />
-                </div>
+                {!isDev && (
+                  <div className="flex justify-center mb-4">
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                      onVerify={(token) => setTurnstileToken(token)}
+                      onExpire={() => setTurnstileToken(null)}
+                      onError={() => setTurnstileToken(null)}
+                      theme="dark"
+                    />
+                  </div>
+                )}
                 <button
                   onClick={handleGenerate}
                   disabled={loading || !turnstileToken}
