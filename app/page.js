@@ -303,6 +303,10 @@ export default function Home() {
                   onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error'); }}
                   theme="dark"
                 />
+                {/* DEBUG — remove after diagnosis */}
+                <p className="text-[10px] font-mono text-[#555]">
+                  status: {turnstileStatus} | key: {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '✓ set' : '✗ missing'} | token: {turnstileToken ? '✓' : '✗'}
+                </p>
                 {turnstileStatus === 'error' && (
                   <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
                 )}
