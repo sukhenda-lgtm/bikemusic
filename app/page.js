@@ -148,7 +148,9 @@ export default function Home() {
     const a = document.createElement('a');
     a.href = url;
     a.download = 'bike-music-playlist.csv';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
