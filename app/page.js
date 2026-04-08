@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import dynamic from 'next/dynamic';
+// TODO: re-enable Turnstile — import dynamic from 'next/dynamic';
+// TODO: re-enable Turnstile — const Turnstile = dynamic(() => import('react-turnstile'), { ssr: false });
 import SongCard from '@/components/SongCard';
-
-const Turnstile = dynamic(() => import('react-turnstile'), { ssr: false });
 
 const RIDE_TYPES = [
   { id: 'hiit', label: 'HIIT', description: 'High-intensity intervals', cadence: '90–100 RPM', icon: '⚡' },
@@ -60,10 +59,9 @@ export default function Home() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isCustomView, setIsCustomView] = useState(false);
-  const isDev = process.env.NEXT_PUBLIC_DISABLE_TURNSTILE === 'true';
-  const [turnstileToken, setTurnstileToken] = useState(isDev ? 'dev' : null);
-  const [turnstileStatus, setTurnstileStatus] = useState('loading'); // 'loading' | 'verified' | 'error'
-  const turnstileRef = useRef(null);
+  // TODO: re-enable Turnstile — const [turnstileToken, setTurnstileToken] = useState(null);
+  // TODO: re-enable Turnstile — const [turnstileStatus, setTurnstileStatus] = useState('loading');
+  // TODO: re-enable Turnstile — const turnstileRef = useRef(null);
 
   function selectMode(mode) {
     setMusicMode(mode);
@@ -99,8 +97,8 @@ export default function Home() {
   const canGenerate =
     selectedRide &&
     musicMode &&
-    (musicMode === 'genre' ? !!selectedGenre : filledArtists.length > 0) &&
-    !!turnstileToken;
+    (musicMode === 'genre' ? !!selectedGenre : filledArtists.length > 0);
+    // TODO: re-enable Turnstile — && !!turnstileToken
 
   async function handleGenerate() {
     if (!canGenerate) return;
@@ -116,7 +114,7 @@ export default function Home() {
       params.set('genre', 'Pop');
       params.set('artists', filledArtists.join(','));
     }
-    params.set('cf-turnstile-response', turnstileToken);
+    // TODO: re-enable Turnstile — params.set('cf-turnstile-response', turnstileToken);
 
     try {
       const res = await fetch(`/api/playlist?${params}`);
@@ -128,8 +126,7 @@ export default function Home() {
       setError(err.message);
     } finally {
       setLoading(false);
-      setTurnstileToken(null);
-      turnstileRef.current?.reset();
+      // TODO: re-enable Turnstile — setTurnstileToken(null); turnstileRef.current?.reset();
     }
   }
 
@@ -295,28 +292,7 @@ export default function Home() {
               </section>
             )}
 
-            {/* DEBUG — remove after diagnosis */}
-            <p className="text-xs font-mono text-orange-400 text-center mb-2 bg-[#1a1a1a] p-2 rounded">
-              bypass: {isDev ? 'yes' : 'no'} | status: {turnstileStatus} | key: {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '✓ set' : '✗ missing'} | token: {turnstileToken ? '✓' : '✗'}
-            </p>
-
-            {!isDev && (
-              <div className="flex flex-col items-center mb-4 gap-2">
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  onLoad={() => setTurnstileStatus('script-loaded')}
-                  onVerify={(token) => { setTurnstileToken(token); setTurnstileStatus('verified'); }}
-                  onExpire={() => { setTurnstileToken(null); setTurnstileStatus('expired'); }}
-                  onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error:' + code); }}
-                  theme="dark"
-                  appearance="always"
-                />
-                {turnstileStatus === 'error' && (
-                  <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
-                )}
-              </div>
-            )}
+            {/* TODO: re-enable Turnstile widget here (selection view) */}
 
             {/* Generate Button */}
             <button
@@ -387,25 +363,11 @@ export default function Home() {
             {/* Refresh (only in full results, not custom view) */}
             {!isCustomView && (
               <>
-                {!isDev && (
-                  <div className="flex flex-col items-center mb-4 gap-2">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      onVerify={(token) => { setTurnstileToken(token); setTurnstileStatus('verified'); }}
-                      onExpire={() => { setTurnstileToken(null); setTurnstileStatus('loading'); }}
-                      onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error'); }}
-                      theme="dark"
-                    />
-                    {turnstileStatus === 'error' && (
-                      <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
-                    )}
-                  </div>
-                )}
+                {/* TODO: re-enable Turnstile widget here (results view) */}
                 <button
                   onClick={handleGenerate}
-                  disabled={loading || !turnstileToken}
-                  className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest bg-[#141414] border-2 border-[#2a2a2a] hover:border-orange-500 hover:text-orange-500 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={loading}
+                  className="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest bg-[#141414] border-2 border-[#2a2a2a] hover:border-orange-500 hover:text-orange-500 transition-all duration-200"
                 >
                   {loading ? 'Refreshing...' : '↻ Generate New Playlist'}
                 </button>
