@@ -60,6 +60,7 @@ export default function Home() {
   const [isCustomView, setIsCustomView] = useState(false);
   const isDev = process.env.NODE_ENV === 'development';
   const [turnstileToken, setTurnstileToken] = useState(isDev ? 'dev' : null);
+  const [turnstileStatus, setTurnstileStatus] = useState('loading'); // 'loading' | 'verified' | 'error'
   const turnstileRef = useRef(null);
 
   function selectMode(mode) {
@@ -293,15 +294,18 @@ export default function Home() {
             )}
 
             {!isDev && (
-              <div className="flex justify-center mb-4">
+              <div className="flex flex-col items-center mb-4 gap-2">
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                  onVerify={(token) => setTurnstileToken(token)}
-                  onExpire={() => setTurnstileToken(null)}
-                  onError={() => setTurnstileToken(null)}
+                  onVerify={(token) => { setTurnstileToken(token); setTurnstileStatus('verified'); }}
+                  onExpire={() => { setTurnstileToken(null); setTurnstileStatus('loading'); }}
+                  onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error'); }}
                   theme="dark"
                 />
+                {turnstileStatus === 'error' && (
+                  <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
+                )}
               </div>
             )}
 
@@ -375,15 +379,18 @@ export default function Home() {
             {!isCustomView && (
               <>
                 {!isDev && (
-                  <div className="flex justify-center mb-4">
+                  <div className="flex flex-col items-center mb-4 gap-2">
                     <Turnstile
                       ref={turnstileRef}
                       siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      onVerify={(token) => setTurnstileToken(token)}
-                      onExpire={() => setTurnstileToken(null)}
-                      onError={() => setTurnstileToken(null)}
+                      onVerify={(token) => { setTurnstileToken(token); setTurnstileStatus('verified'); }}
+                      onExpire={() => { setTurnstileToken(null); setTurnstileStatus('loading'); }}
+                      onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error'); }}
                       theme="dark"
                     />
+                    {turnstileStatus === 'error' && (
+                      <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
+                    )}
                   </div>
                 )}
                 <button
