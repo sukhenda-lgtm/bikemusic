@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Turnstile from 'react-turnstile';
+import dynamic from 'next/dynamic';
 import SongCard from '@/components/SongCard';
+
+const Turnstile = dynamic(() => import('react-turnstile'), { ssr: false });
 
 const RIDE_TYPES = [
   { id: 'hiit', label: 'HIIT', description: 'High-intensity intervals', cadence: '90–100 RPM', icon: '⚡' },
