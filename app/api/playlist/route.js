@@ -6,7 +6,7 @@ export async function GET(request) {
   const rideType = searchParams.get('rideType');
   const genre = searchParams.get('genre');
   const artistsParam = searchParams.get('artists');
-  if (process.env.NODE_ENV !== 'development') {
+  if (process.env.NEXT_PUBLIC_DISABLE_TURNSTILE !== 'true') {
     const cfToken = searchParams.get('cf-turnstile-response');
     if (!cfToken) {
       return NextResponse.json({ error: 'Missing verification token' }, { status: 400 });

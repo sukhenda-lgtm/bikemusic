@@ -58,7 +58,7 @@ export default function Home() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isCustomView, setIsCustomView] = useState(false);
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NEXT_PUBLIC_DISABLE_TURNSTILE === 'true';
   const [turnstileToken, setTurnstileToken] = useState(isDev ? 'dev' : null);
   const [turnstileStatus, setTurnstileStatus] = useState('loading'); // 'loading' | 'verified' | 'error'
   const turnstileRef = useRef(null);
@@ -293,6 +293,11 @@ export default function Home() {
               </section>
             )}
 
+            {/* DEBUG — remove after diagnosis */}
+            <p className="text-[10px] font-mono text-[#555] text-center mb-2">
+              bypass: {isDev ? 'yes' : 'no'} | status: {turnstileStatus} | key: {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '✓ set' : '✗ missing'} | token: {turnstileToken ? '✓' : '✗'}
+            </p>
+
             {!isDev && (
               <div className="flex flex-col items-center mb-4 gap-2">
                 <Turnstile
@@ -303,10 +308,6 @@ export default function Home() {
                   onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error'); }}
                   theme="dark"
                 />
-                {/* DEBUG — remove after diagnosis */}
-                <p className="text-[10px] font-mono text-[#555]">
-                  status: {turnstileStatus} | key: {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '✓ set' : '✗ missing'} | token: {turnstileToken ? '✓' : '✗'}
-                </p>
                 {turnstileStatus === 'error' && (
                   <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
                 )}
