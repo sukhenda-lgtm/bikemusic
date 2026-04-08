@@ -130,6 +130,28 @@ export default function Home() {
     }
   }
 
+  function exportCSV(exportTracks) {
+    const headers = ['Title', 'Artist', 'Album', 'Duration', 'BPM', 'Spotify URL'];
+    const rows = exportTracks.map((t) => [
+      t.title,
+      t.artist,
+      t.album ?? '',
+      formatDuration(t.durationMs),
+      t.bpm ?? '',
+      t.spotifyUrl,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bike-music-playlist.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleReset() {
     setHasResults(false);
     setTracks([]);
@@ -332,17 +354,28 @@ export default function Home() {
 
             {/* Custom view controls */}
             {isCustomView && (
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={backToFullResults}
+                    className="text-sm text-[#a3a3a3] hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    ← Back to full results
+                  </button>
+                  <span className="text-[#333]">·</span>
+                  <span className="text-xs text-[#666]">
+                    {selectedIds.size} of {tracks.length} songs selected
+                  </span>
+                </div>
                 <button
-                  onClick={backToFullResults}
-                  className="text-sm text-[#a3a3a3] hover:text-white transition-colors flex items-center gap-1"
+                  onClick={() => exportCSV(displayTracks)}
+                  className="flex items-center gap-2 text-sm font-semibold text-orange-500 hover:text-orange-400 transition-colors"
                 >
-                  ← Back to full results
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                  </svg>
+                  Export CSV
                 </button>
-                <span className="text-[#333]">·</span>
-                <span className="text-xs text-[#666]">
-                  {selectedIds.size} of {tracks.length} songs selected
-                </span>
               </div>
             )}
 

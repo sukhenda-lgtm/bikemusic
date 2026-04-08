@@ -74,7 +74,9 @@ function CardInner({ track, index, selected, selectable }) {
         }`}>
           {track.title}
         </p>
-        <p className="text-[#a3a3a3] text-xs truncate mt-0.5">{track.artist}</p>
+        <p className="text-[#a3a3a3] text-xs truncate mt-0.5">
+          {track.artist}{track.album ? <span className="text-[#555]"> · {track.album}</span> : null}
+        </p>
       </div>
 
       {/* Duration */}
