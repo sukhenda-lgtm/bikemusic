@@ -294,7 +294,7 @@ export default function Home() {
             )}
 
             {/* DEBUG — remove after diagnosis */}
-            <p className="text-[10px] font-mono text-[#555] text-center mb-2">
+            <p className="text-xs font-mono text-orange-400 text-center mb-2 bg-[#1a1a1a] p-2 rounded">
               bypass: {isDev ? 'yes' : 'no'} | status: {turnstileStatus} | key: {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '✓ set' : '✗ missing'} | token: {turnstileToken ? '✓' : '✗'}
             </p>
 
