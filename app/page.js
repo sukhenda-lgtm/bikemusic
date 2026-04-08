@@ -303,10 +303,12 @@ export default function Home() {
                 <Turnstile
                   ref={turnstileRef}
                   siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                  onLoad={() => setTurnstileStatus('script-loaded')}
                   onVerify={(token) => { setTurnstileToken(token); setTurnstileStatus('verified'); }}
-                  onExpire={() => { setTurnstileToken(null); setTurnstileStatus('loading'); }}
-                  onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error'); }}
+                  onExpire={() => { setTurnstileToken(null); setTurnstileStatus('expired'); }}
+                  onError={(code) => { console.error('Turnstile error:', code); setTurnstileToken(null); setTurnstileStatus('error:' + code); }}
                   theme="dark"
+                  appearance="always"
                 />
                 {turnstileStatus === 'error' && (
                   <p className="text-red-400 text-xs">Verification failed — please refresh the page and try again.</p>
